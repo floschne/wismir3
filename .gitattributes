@@ -1,1 +1,2 @@
 data/images.tar.gz.part* filter=lfs diff=lfs merge=lfs -text
+data/frcnn_feats*part* filter=lfs diff=lfs merge=lfs -text
