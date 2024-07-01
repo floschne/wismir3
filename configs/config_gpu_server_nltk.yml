@@ -1,0 +1,61 @@
+run:
+  # If true, the step gets executes or skipped otherwise
+  extract: True
+  transform: True
+  load: True
+
+extraction: # Extraction step
+  read_from_wikicaps_datasource: True # if True the data is read from the raw wikicaps file otherwise from metadata_dataframe
+  wikicaps_datasource: ./data/wikicaps_data_list_unfiltered
+  shuffle: True
+  random_seed: 1312
+  pos_tag_stats: True # if True POS Tag statistics of the tokens get computed (takes longer)
+  readability_scores: False # if True Flesch-Kincaid and Dale-Chall readability scores get computed for each caption
+  max_samples: 190000 # after filtering. 190k ~= 5% of WikiCaps
+  metadata_generator_backend: nltk  # can be either polyglot, spacy or nltk
+  filters:
+    - NumTokens:
+        columnId: num_tok
+        max: 150
+        min: 10
+    - MinSentenceLength:
+        columnId: min_sent_len
+        min: 5
+    - NumSents:
+        columnId: num_sent
+        max: 5
+        min: 1
+  spacy:
+    model: en_core_web_lg
+    use_gpu: True
+    n_workers: 4 # when using GPU, all workers allocate memory on a single GPU
+
+  download:
+    with_skimage: True # otherwise with python requests and pillow (SkImage seems to be more stable)
+    n_workers: 24
+    max_img_width: 640 # in px
+
+
+transformation: # Transformation step
+  n_workers: 24
+  metadata_file: ./wikicaps_etl_out/metadata.df.feather # TODO
+
+  image:
+    - Resize:
+        maxWidth: 640 # in px
+        maxHeight: 640 # in px
+        resampling: 3 # choice of: nearest (0), lanczos (1), bilinear (2), bicubic (3), box (4), hamming (5) (https://pillow.readthedocs.io/en/stable/handbook/concepts.html)
+    - Compress:
+        optimize: True
+        dpi: 72
+    - WebP:
+        lossless: True
+        quality: 33
+        method: 6
+
+output: # Loading step and general output stuff
+  log_file: ./wikicaps_etl_out/full.log
+  img_format: png # choice of: png, jpg, npy, npz # TODO transformation only supports png and jpg for now
+  img_directory: ./wikicaps_etl_out/images/
+  metadata_file: ./wikicaps_etl_out/metadata_nltk.df.feather
+  path_caption_csv_file: ./wikicaps_etl_out/path_caption.csv
